@@ -1,7 +1,7 @@
 ---
 title: Architecture
 scope: System design, data flow, cryptographic architecture, storage schema, Electron shell, and design decisions
-last_updated: 2026-03-02
+last_updated: 2026-03-01
 ---
 
 # Architecture
@@ -75,7 +75,7 @@ graph LR
 
 **Encryption** uses `crypto.subtle.encrypt` with a fresh 12-byte IV generated via `crypto.getRandomValues` for every operation. The ciphertext and IV are base64-encoded and stored together in IndexedDB. The CryptoKey object is held in a JavaScript variable and never serialized or persisted.
 
-**Session lifecycle**: the CryptoKey is cleared on `beforeunload` and on manual lock. A `visibilitychange` listener triggers auto-lock after 5 minutes of tab inactivity.
+**Session lifecycle**: on lock, all decrypted state is wiped — the CryptoKey, all form data, cached entries, search results, and the system clipboard are cleared. Auto-lock triggers after 5 minutes of tab inactivity (`visibilitychange`). Failed authentication attempts are rate-limited with exponential backoff (2s, 4s, 8s... up to 30s).
 
 ## Storage Schema
 
@@ -170,9 +170,9 @@ graph TB
 
 **Protocol registration**: The `app` scheme is registered as privileged (standard + secure) before `app.ready`. The file protocol handler resolves `app://./path` to the web app's base directory, with path traversal prevention.
 
-**IPC architecture**: The preload script exposes a safe `window.electronAPI` object via `contextBridge`. The electron-bridge.js file (injected into the page via `DOMContentLoaded`) listens for IPC events and calls Alpine.js methods through `window.sdlcAppRef`, which is set during `init()`. This pattern keeps `contextIsolation: true` and `nodeIntegration: false`.
+**IPC architecture**: The preload script exposes a safe `window.electronAPI` object via `contextBridge` with `sandbox: true` — the preload has no `fs` or `path` imports. The electron-bridge.js code is loaded into the renderer via an IPC call (`bridge:code`) at `DOMContentLoaded`, avoiding any filesystem access from the preload. Bridge code listens for IPC events and calls Alpine.js methods through `window.sdlcAppRef`, which is set during `init()` (only when `window.electronAPI` is present). File I/O handlers use dialog-approved single-use path tokens — a file can only be saved to or read from the exact path returned by the most recent native dialog. This pattern keeps `contextIsolation: true`, `nodeIntegration: false`, and `sandbox: true`.
 
-**Feature detection**: All Electron-specific behavior is gated behind `if (window.electronAPI)` checks in the web app code (currently only in `storage.js` for native file dialogs). This means the web version is completely unaffected by the Electron integration — `window.electronAPI` is `undefined` in browsers.
+**Feature detection**: All Electron-specific behavior is gated behind `if (window.electronAPI)` checks — both in `storage.js` for native file dialogs and in `app.js` for `window.sdlcAppRef` exposure. This means the web version is completely unaffected by the Electron integration — `window.electronAPI` is `undefined` in browsers, and `sdlcAppRef` is never set.
 
 ## Design Decisions
 
@@ -188,8 +188,8 @@ graph TB
 | IIFE modules | No bundler, no ES modules | Zero build tooling; works directly on GitHub Pages; simple dependency chain |
 | Same-repo Electron | `electron/` subdirectory, loads web files directly | Single source of truth; no file copies or sync issues; GitHub Pages ignores `electron/` |
 | Custom `app://` protocol | Registered as standard + secure | `'self'` in CSP resolves to `app://.`; provides secure context for Web Crypto; no CSP changes needed |
-| contextBridge + preload | `contextIsolation: true`, `nodeIntegration: false` | Minimal attack surface; renderer has no direct Node.js access |
-| `window.sdlcAppRef` bridge | Alpine component exposes itself at init | Electron modules can call `lock()`, `saveEntry()`, `navigate()` via IPC without modifying the Alpine component |
+| contextBridge + preload | `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true` | Minimal attack surface; renderer has no direct Node.js access; preload has no fs/path imports |
+| `window.sdlcAppRef` bridge | Alpine component exposes itself at init, only when `window.electronAPI` is present | Electron modules can call `lock()`, `saveEntry()`, `navigate()` via IPC; gated so the web version never exposes the reference |
 
 ## Browser Requirements
 

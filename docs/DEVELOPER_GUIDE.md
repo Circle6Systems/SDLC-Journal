@@ -1,7 +1,7 @@
 ---
 title: Developer Guide
 scope: Coding conventions, file organization, module patterns, Electron development, and how to extend the application
-last_updated: 2026-03-02
+last_updated: 2026-03-01
 ---
 
 # Developer Guide
@@ -95,6 +95,9 @@ Any code change must maintain the encryption guarantees documented in [SECURITY.
 - All user-generated content must be rendered via `x-text` (which auto-escapes HTML), never `x-html`.
 - Do not add external script sources, CDN links, or analytics. The CSP and privacy commitment prohibit external connections.
 - New IndexedDB stores or schema changes require incrementing `DB_VERSION` in `storage.js` and adding migration logic in `onupgradeneeded`.
+- The `lock()` method must clear **all** decrypted state — if you add new data properties that hold plaintext, add them to the clearing list in `lock()`.
+- The import function in `storage.js` protects cryptographic meta keys (`passphraseHash`, `passphraseSalt`, `keySalt`) from overwrite. Never bypass this protection.
+- `window.sdlcAppRef` is only set when `window.electronAPI` exists. Do not expose it unconditionally.
 
 ## Electron Development
 
@@ -102,9 +105,9 @@ To run the desktop app locally, install Electron dependencies and start. See [RE
 
 **Adding an IPC handler** (e.g., a new native dialog or file operation):
 
-1. **Main process** (`electron/main.js`): Add `ipcMain.handle('channel:name', handler)` in `setupIPC()`.
-2. **Preload** (`electron/preload.js`): Expose the channel in the `contextBridge.exposeInMainWorld('electronAPI', {...})` object.
-3. **Bridge** (`electron/electron-bridge.js`): If the feature is triggered by menu/tray, add an `electronAPI.onChannelName()` listener that calls the appropriate `window.sdlcAppRef` method.
+1. **Main process** (`electron/main.js`): Add `ipcMain.handle('channel:name', handler)` in `setupIPC()`. For file I/O, follow the dialog-approved path validation pattern — store the dialog-returned path, validate it on the subsequent file operation, then clear it (single-use).
+2. **Preload** (`electron/preload.js`): Expose the channel in the `contextBridge.exposeInMainWorld('electronAPI', {...})` object. The preload runs with `sandbox: true` — do not import `fs`, `path`, or other Node.js modules here.
+3. **Bridge** (`electron/electron-bridge.js`): If the feature is triggered by menu/tray, add an `electronAPI.onChannelName()` listener that calls the appropriate `window.sdlcAppRef` method. Bridge code is loaded into the renderer via the `bridge:code` IPC channel, not via filesystem access.
 4. **Web app**: Gate Electron-specific behavior behind `if (window.electronAPI)` checks so the browser version is unaffected.
 
 **Adding a menu item**: Edit `electron/menu.js` and add an entry to the appropriate submenu template. Use `mainWindow.webContents.send('app:yourEvent')` to send an IPC message to the renderer, then handle it in `electron-bridge.js`.

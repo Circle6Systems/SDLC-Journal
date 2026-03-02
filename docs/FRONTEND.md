@@ -1,7 +1,7 @@
 ---
 title: Frontend Architecture
 scope: Alpine.js component design, view state machine, CSS design system, desktop UX, and responsive layout
-last_updated: 2026-03-02
+last_updated: 2026-03-01
 ---
 
 # Frontend Architecture
@@ -56,7 +56,7 @@ The `sdlcApp` data object is organized into logical groups. Each group maps to a
 | Browse | `allEntryMetas`, `browseGroups`, `searchQuery`, `searchResults`, `selectedEntry`, `isEditing`, `editForm` | Entry browsing and search |
 | Rollups | `rollupTab`, `availablePeriods`, `selectedPeriod`, `currentRollup`, `subReflections`, `reflectionText` | Period summaries |
 | Settings | `storageEstimate`, `entryCount`, `showClearConfirm`, `clearConfirmText` | Data management |
-| Session | `_lockTimer`, `_lastActivity` | Auto-lock timing |
+| Session | `_lockTimer`, `_lastActivity`, `_failedAttempts`, `_lockoutUntil` | Auto-lock timing, rate limiting |
 
 ## CSS Design System
 
@@ -75,14 +75,14 @@ The stylesheet uses CSS custom properties for consistent theming. All colors, sp
 | `--white` | `#f5f0e8` | Alt. light background |
 | `--accent` | `#8faa7b` | Interactive elements, links, highlights |
 
-**SDLC category colors** — each journal category has a dedicated color pair for text/borders and translucent backgrounds:
+**SDLC category colors** — each journal category has a dedicated color set: a border/accent color, a WCAG AA-compliant text variant (4.5:1+ contrast against navy backgrounds), and a translucent background:
 
-| Category | Color | Background |
-|----------|-------|------------|
-| Success | `#8faa7b` | `#8faa7b18` |
-| Delight | `#d4a85c` | `#d4a85c18` |
-| Learning | `#7a9bb5` | `#7a9bb518` |
-| Compliment | `#c17c8e` | `#c17c8e18` |
+| Category | Border/Accent | Text (AA) | Background |
+|----------|---------------|-----------|------------|
+| Success | `#8faa7b` | `#a3c090` | `#8faa7b18` |
+| Delight | `#d4a85c` | `#e0bc72` | `#d4a85c18` |
+| Learning | `#7a9bb5` | `#93b5cb` | `#7a9bb518` |
+| Compliment | `#c17c8e` | `#d592a3` | `#c17c8e18` |
 
 **Typography**: Headings use Georgia (serif); body text uses the system sans-serif stack (`-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, ...`).
 
@@ -121,9 +121,27 @@ The Electron app wraps the same web UI and adds native desktop features. These a
 
 ## Accessibility
 
-- **Focus management**: `:focus-visible` outlines using the accent color with 2px offset; non-keyboard focus suppressed on buttons
-- **Screen reader support**: `.sr-only` utility class available for visually hidden labels
-- **Reduced motion**: `prefers-reduced-motion: reduce` disables all animations and transitions
-- **Contrast**: Text colors meet WCAG AA contrast ratios against the navy backgrounds
-- **Semantic HTML**: Navigation uses `<nav>` with `aria-label`; form inputs have associated `<label>` elements
-- **Print styles**: Navigation, buttons, and footer hidden; colors adjusted for paper output
+The application targets WCAG 2.1 AA compliance across all views.
+
+**Focus and keyboard operation**:
+- `:focus-visible` outlines using the accent color with 2px offset; non-keyboard focus suppressed on buttons
+- All interactive elements (including entry list items) have `role="button"`, `tabindex="0"`, and keyboard handlers for Enter and Space
+- Focus moves to the heading of the destination view on navigation via `$nextTick`
+- Bottom navigation buttons meet the 44×44px minimum touch target
+
+**Screen reader support**:
+- `.sr-only` utility class for visually hidden labels
+- All `<textarea>` elements have programmatic `<label>` associations via `for`/`id`
+- Period selector and search input have `sr-only` labels
+- Error messages use `role="alert"` for immediate announcement
+- Success messages use `role="status"` with `aria-live="polite"`
+- DELETE ALL confirmation dialog has `role="alertdialog"` with `aria-label`
+
+**Color and contrast**:
+- Category label text uses WCAG AA-compliant color variants (`--success-text`, `--delight-text`, `--learning-text`, `--compliment-text`) that achieve 4.5:1+ contrast against navy backgrounds
+- All primary text/background combinations meet AA thresholds
+
+**Other**:
+- `prefers-reduced-motion: reduce` disables all animations and transitions
+- Navigation uses `<nav>` with `aria-label`
+- Print styles: navigation, buttons, and footer hidden; colors adjusted for paper output

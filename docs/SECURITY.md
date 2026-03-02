@@ -1,7 +1,7 @@
 ---
 title: Security
 scope: Threat model, encryption controls, content security policy, session management, Electron security, and incident response
-last_updated: 2026-03-02
+last_updated: 2026-03-01
 ---
 
 # Security
@@ -14,14 +14,14 @@ The app protects against these threat categories, ordered by likelihood in the t
 
 | Threat | Mitigation | Residual Risk |
 |--------|------------|---------------|
-| **Casual device access** — someone opens the browser and reads journal entries | Entries encrypted at rest in IndexedDB; session auto-locks after 5 min tab inactivity; key cleared on page unload | If the browser tab remains open and active, entries are visible until manual lock |
+| **Casual device access** — someone opens the browser and reads journal entries | Entries encrypted at rest in IndexedDB; session auto-locks after 5 min tab inactivity; key cleared on page unload; all decrypted state and clipboard wiped on lock | If the browser tab remains open and active, entries are visible until manual lock |
 | **IndexedDB inspection** — attacker examines browser storage directly | All entry and rollup content stored as AES-256-GCM ciphertext; only encrypted blobs visible in DevTools | Meta store contains salts and verification hash (not plaintext, not the encryption key) |
-| **Weak passphrase** — brute-force or dictionary attack against the passphrase | PBKDF2 with 600,000 iterations; minimum 12-character passphrase enforced in UI | No server-side rate limiting (offline attack); passphrase strength depends on user choice |
+| **Weak passphrase** — brute-force or dictionary attack against the passphrase | PBKDF2 with 600,000 iterations; minimum 12-character passphrase enforced in UI; progressive rate limiting with exponential backoff on failed attempts (up to 30-second lockout) | No server-side rate limiting (offline attack); passphrase strength depends on user choice; rate limiting resets on page reload |
 | **Network interception** — MITM or eavesdropping | HTTPS enforced via GitHub Pages; CSP restricts all connections to `'self'`; no outbound requests after page load | Initial page load over HTTPS is the trust anchor; a compromised CDN or DNS could serve altered code |
 | **XSS / code injection** — malicious script accesses the CryptoKey | CSP meta tag: `script-src 'self' 'unsafe-eval'`; no inline scripts; all user content rendered via Alpine.js `x-text` (auto-escaped) | `unsafe-eval` required by Alpine.js; mitigated by `default-src 'self'` blocking external code |
 | **Clickjacking** — embedding the app in a malicious frame | `X-Frame-Options: DENY` and `frame-ancestors 'none'` in CSP | Relies on browser honoring these headers |
 | **Data exfiltration via browser extensions** — malicious extension reads DOM/storage | Out of scope; browser extensions run with elevated privileges | Users should audit installed extensions |
-| **Electron renderer compromise** — malicious code in renderer tries to access Node.js | `contextIsolation: true`, `nodeIntegration: false`, `sandbox: false` (required for preload fs access); only `electronAPI` exposed via `contextBridge` | Preload exposes a limited API surface; no arbitrary file system or process access from renderer |
+| **Electron renderer compromise** — malicious code in renderer tries to access Node.js | `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`; only `electronAPI` exposed via `contextBridge`; preload has no `fs` or `path` imports | Preload exposes a limited API surface; no arbitrary file system or process access from renderer |
 | **Path traversal via `app://` protocol** — crafted URL accesses files outside app directory | Protocol handler resolves and validates that all paths fall within the app base directory | Only files within the web app root are served |
 | **Navigation hijacking** — renderer navigates to a malicious URL | `will-navigate` handler blocks all non-`app://` URLs; `setWindowOpenHandler` sends external URLs to system browser | Electron never loads remote content |
 
@@ -70,7 +70,7 @@ The master CryptoKey exists only as a JavaScript object in memory. It is never s
 - Manual lock: user clicks the "Lock" button in the header, or uses Cmd/Ctrl+L, or selects "Lock Journal" from the system tray
 - **Electron only**: window `blur` event starts a 5-minute timer; `focus` cancels it. This complements `visibilitychange` for desktop window switching.
 
-**On lock**, the app clears: `cryptoKey`, `entryForm`, `selectedEntry`, `currentRollup`, `searchResults`, and navigates to the auth view.
+**On lock**, the app performs a full state wipe: `cryptoKey`, all form data (`entryForm`, `editForm`), `selectedEntry`, `currentRollup`, `searchResults`, `recentEntries`, `reflectionText`, `subReflections`, `browseGroups`, `allEntryMetas`, `searchQuery`, and error/message strings are all cleared. The system clipboard is also wiped via `navigator.clipboard.writeText('')`. The view resets to `auth`.
 
 **Single instance lock** (Electron only): `app.requestSingleInstanceLock()` ensures only one instance runs. A second launch attempt focuses the existing window instead of opening a new one, preventing multiple unlocked sessions.
 
@@ -78,7 +78,7 @@ The master CryptoKey exists only as a JavaScript object in memory. It is never s
 
 The export function downloads all IndexedDB content (entries, rollups, meta) as a JSON file. Exported data remains encrypted — the backup file contains ciphertext, IVs, salts, and the verification hash. **It does not contain the passphrase or the CryptoKey.**
 
-Importing a backup merges data using a "newer wins" strategy (comparing `updatedAt` timestamps). Because the backup includes the `keySalt` and `passphraseHash`, importing a backup from a different passphrase will overwrite authentication material. The user must then re-lock and authenticate with the passphrase that matches the imported data.
+Importing a backup merges data using a "newer wins" strategy (comparing `updatedAt` timestamps). Cryptographic meta keys (`passphraseHash`, `passphraseSalt`, `keySalt`) are protected during import — they are never overwritten by incoming data. This prevents an attacker from crafting a backup file that replaces authentication material with known values.
 
 ## Known Limitations
 
@@ -87,7 +87,7 @@ Importing a backup merges data using a "newer wins" strategy (comparing `updated
 - **No integrity verification on static files**: GitHub Pages does not support Subresource Integrity (SRI) for same-origin scripts. A compromised GitHub account or supply chain attack on GitHub Pages could serve altered JavaScript. Users concerned about this should self-host or verify source integrity via git.
 - **Browser extension access**: Extensions running with `<all_urls>` permission can read DOM content and IndexedDB. This is outside the app's control.
 - **Electron auto-update trust**: Updates are fetched from GitHub Releases over HTTPS. A compromised GitHub account could push a malicious update. Users concerned about this should verify release signatures or build from source.
-- **Electron IPC surface**: The preload script exposes file dialog and file I/O operations via `electronAPI`. These are limited to explicit user-initiated actions (save dialog, open dialog) and cannot be triggered silently by page scripts.
+- **Electron IPC surface**: The preload script exposes file dialog and file I/O operations via `electronAPI`. File I/O uses dialog-approved path validation — a file can only be written to or read from the exact path returned by the most recent native save/open dialog. Each approval is single-use and cleared after the operation. The `shell.openExternal` handler restricts URLs to `https:` and `http:` protocols only.
 
 ## Incident Response
 
