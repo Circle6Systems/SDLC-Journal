@@ -1,0 +1,84 @@
+{
+  "name": "peoplesafe-sdlc-journal",
+  "version": "1.0.0",
+  "description": "PeopleSafe SDLC Journal — Client-side encrypted journaling for IT professionals",
+  "main": "main.js",
+  "author": "Circle 6 Systems <info@circle6systems.com>",
+  "license": "MIT",
+  "homepage": "https://sdlc.circle6systems.com",
+  "scripts": {
+    "start": "electron .",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux",
+    "build:all": "electron-builder --mac --win --linux"
+  },
+  "dependencies": {
+    "electron-updater": "~6.3.9"
+  },
+  "devDependencies": {
+    "electron": "~33.3.1",
+    "electron-builder": "~25.1.8"
+  },
+  "build": {
+    "appId": "com.circle6systems.sdlc-journal",
+    "productName": "PeopleSafe SDLC Journal",
+    "copyright": "Copyright 2024-2026 Circle 6 Systems",
+    "directories": {
+      "output": "dist"
+    },
+    "extraResources": [
+      {
+        "from": "../index.html",
+        "to": "app/index.html"
+      },
+      {
+        "from": "../css",
+        "to": "app/css"
+      },
+      {
+        "from": "../js",
+        "to": "app/js"
+      },
+      {
+        "from": "../assets",
+        "to": "app/assets"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "icons/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "icon": "icons/icon.png",
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "icon": "icons/icon.png",
+      "category": "Office",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "jeff-is-working",
+      "repo": "SDLC-Journal"
+    }
+  }
+}

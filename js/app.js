@@ -71,6 +71,9 @@ document.addEventListener('alpine:init', () => {
 
       // Session management
       this._setupSessionHandlers();
+
+      // Expose app reference for Electron bridge (inert in browser)
+      window.sdlcAppRef = this;
     },
 
     // --- Auth ---

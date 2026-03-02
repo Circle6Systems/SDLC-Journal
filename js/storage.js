@@ -177,14 +177,26 @@ const Storage = (() => {
     };
 
     const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
+    const filename = `peoplesafe-sdlc-backup-${Utils.today()}.json`;
 
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `peoplesafe-sdlc-backup-${Utils.today()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // Use native save dialog in Electron, browser download otherwise
+    if (window.electronAPI) {
+      const result = await window.electronAPI.showSaveDialog({
+        defaultPath: filename,
+        filters: [{ name: 'JSON Files', extensions: ['json'] }]
+      });
+      if (!result.canceled && result.filePath) {
+        await window.electronAPI.saveFile(result.filePath, json);
+      }
+    } else {
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
 
     return { entryCount: entries.length, rollupCount: rollups.length };
   }
