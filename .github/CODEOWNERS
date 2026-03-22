@@ -1,0 +1,9 @@
+# Default owner for everything in the repo
+* @jeffrecords
+
+# GitHub Actions and CI/CD
+/.github/ @jeffrecords
+
+# Documentation
+/docs/ @jeffrecords
+*.md @jeffrecords

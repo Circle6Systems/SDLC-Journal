@@ -13,7 +13,7 @@ PeopleSafe SDLC Journal is deployed two ways: as a static site on GitHub Pages (
 | Aspect | Detail |
 |--------|--------|
 | Host | GitHub Pages |
-| Repository | `jeff-is-working/SDLC-Journal` |
+| Repository | `circle6systems/SDLC-Journal` |
 | Custom domain | `sdlc.circle6systems.com` |
 | HTTPS | Enforced by GitHub Pages |
 | Build type | GitHub Actions workflow |
@@ -47,7 +47,7 @@ The custom domain requires a DNS CNAME record and the GitHub Pages configuration
 
 | Type | Name | Value |
 |------|------|-------|
-| CNAME | `sdlc` | `jeff-is-working.github.io` |
+| CNAME | `sdlc` | `circle6systems.github.io` |
 
 **GitHub side**: The `CNAME` file in the repository root contains `sdlc.circle6systems.com`. GitHub Pages reads this file and configures the custom domain automatically. HTTPS is enforced via GitHub's automatic Let's Encrypt certificate provisioning.
 
@@ -58,7 +58,7 @@ For setup and local development instructions, see [README.md](../README.md#local
 | Symptom | Cause | Resolution |
 |---------|-------|------------|
 | Site shows 404 after push | GitHub Actions workflow not triggered | Check Actions tab; verify `static.yml` exists on `main`; manually trigger via `workflow_dispatch` |
-| Custom domain not resolving | DNS CNAME not propagated | Verify CNAME record points to `jeff-is-working.github.io`; allow up to 24h for DNS propagation; check with `dig sdlc.circle6systems.com` |
+| Custom domain not resolving | DNS CNAME not propagated | Verify CNAME record points to `circle6systems.github.io`; allow up to 24h for DNS propagation; check with `dig sdlc.circle6systems.com` |
 | HTTPS certificate error | GitHub hasn't provisioned the cert yet | Wait 15-30 minutes after DNS propagation; check repo Settings > Pages for certificate status |
 | `CNAME` file disappears after deploy | Workflow artifact doesn't include it | Ensure `CNAME` is committed to the `main` branch and not in `.gitignore` |
 | Old content served after deploy | CDN cache | GitHub Pages has a 10-minute cache; hard-refresh with Ctrl+Shift+R; wait and retry |

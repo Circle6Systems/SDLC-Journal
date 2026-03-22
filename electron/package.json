@@ -77,7 +77,7 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "jeff-is-working",
+      "owner": "circle6systems",
       "repo": "SDLC-Journal"
     }
   }

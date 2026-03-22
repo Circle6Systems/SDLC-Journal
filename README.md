@@ -73,7 +73,7 @@ For the complete component inventory, see [SBOM.md](SBOM.md).
 
 ### Desktop App
 
-Download the latest release for your platform from [GitHub Releases](https://github.com/jeff-is-working/SDLC-Journal/releases):
+Download the latest release for your platform from [GitHub Releases](https://github.com/circle6systems/SDLC-Journal/releases):
 
 | Platform | File |
 |----------|------|
