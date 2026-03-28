@@ -1,7 +1,7 @@
 ---
 title: Software Bill of Materials (SBOM)
 scope: Complete inventory of all software components, their versions, licenses, and origins
-last_updated: 2026-03-01
+last_updated: 2026-03-27
 ---
 
 # Software Bill of Materials

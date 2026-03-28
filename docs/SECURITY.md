@@ -1,7 +1,7 @@
 ---
 title: Security
 scope: Threat model, encryption controls, content security policy, session management, Electron security, and incident response
-last_updated: 2026-03-01
+last_updated: 2026-03-27
 ---
 
 # Security

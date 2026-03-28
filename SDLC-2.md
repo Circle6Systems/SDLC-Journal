@@ -1,3 +1,9 @@
+---
+title: SDLC Journaling Technique
+scope: Methodology, rationale, and practice guidance for the PeopleSafe SDLC journaling framework
+last_updated: 2026-03-27
+---
+
 # PeopleSafe SDLC Journaling Technique
 
 ## Origin

@@ -1,7 +1,7 @@
 ---
 title: Frontend Architecture
 scope: Alpine.js component design, view state machine, CSS design system, desktop UX, and responsive layout
-last_updated: 2026-03-01
+last_updated: 2026-03-27
 ---
 
 # Frontend Architecture

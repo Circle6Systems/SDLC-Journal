@@ -1,7 +1,7 @@
 ---
 title: Architecture
 scope: System design, data flow, cryptographic architecture, storage schema, Electron shell, and design decisions
-last_updated: 2026-03-01
+last_updated: 2026-03-27
 ---
 
 # Architecture

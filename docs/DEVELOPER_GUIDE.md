@@ -1,7 +1,7 @@
 ---
 title: Developer Guide
 scope: Coding conventions, file organization, module patterns, Electron development, and how to extend the application
-last_updated: 2026-03-01
+last_updated: 2026-03-27
 ---
 
 # Developer Guide

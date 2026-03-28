@@ -1,7 +1,7 @@
 ---
 title: Documentation Index
 scope: Navigation hub for all PeopleSafe SDLC Journal documentation
-last_updated: 2026-03-01
+last_updated: 2026-03-27
 ---
 
 # PeopleSafe SDLC Journal — Documentation

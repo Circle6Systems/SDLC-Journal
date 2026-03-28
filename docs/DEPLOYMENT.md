@@ -1,7 +1,7 @@
 ---
 title: Deployment
 scope: GitHub Pages hosting, Electron desktop distribution, CI/CD pipelines, and troubleshooting
-last_updated: 2026-03-01
+last_updated: 2026-03-27
 ---
 
 # Deployment
